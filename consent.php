@@ -73,6 +73,16 @@
     document.getElementById('gatewayForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
+		// Inside your form submit event listener in consent.php:
+		const urlParams = new URLSearchParams(window.location.search);
+		const testType = urlParams.get('test');
+
+		if (testType === 'awareness') {
+			window.location.href = 'test-awareness.php';
+		} else {
+			window.location.href = 'test-interest.php'; // Default fallback
+		}
+		
         const participantData = {
             action: 'register',
             name: document.getElementById('pName').value,

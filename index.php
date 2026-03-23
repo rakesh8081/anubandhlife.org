@@ -39,6 +39,13 @@
                 <a href="consent.php?test=digital" class="btn">Take Survey</a>
             </div>
         </div>
+		
+		<div class="item-group">
+			<h3>2. Psychological Awareness Survey</h3>
+			<p>A research initiative exploring student perceptions, knowledge gaps, and social attitudes regarding psychological disorders.</p>
+			<a href="consent.php?test=awareness" class="btn">Take Survey</a>
+		</div>
+
     </div>
     </main>
     
