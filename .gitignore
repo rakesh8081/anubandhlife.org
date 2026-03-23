@@ -1,0 +1,19 @@
+# --- DATABASE & SECURITY ---
+# Never upload your Hostinger DB credentials
+db_config.php
+
+# --- DEPENDENCIES ---
+# If you are using PHPMailer, it's better to manage it separately 
+# or via Composer rather than pushing the whole library to a public repo
+PHPMailer/
+
+# --- OS & IDE TRASH ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- LOGS & TEMP ---
+*.log
+error_log
+temp/
