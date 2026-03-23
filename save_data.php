@@ -38,4 +38,21 @@ elseif ($action === 'save_results') {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
+
+// ... existing code ...
+} elseif ($action === 'save_awareness_results') {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO awareness_survey_results (participant_id, demographics, responses) VALUES (?, ?, ?)");
+        $stmt->execute([
+            $data['participant_id'],
+            json_encode($data['demographics']),
+            json_encode($data['responses'])
+        ]);
+        echo json_encode(['success' => true]);
+    } catch (Exception $e) {
+        error_log("Survey Save Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Database error while saving survey.']);
+    }
+}
+// ... existing code ...
 ?>
