@@ -68,8 +68,7 @@ if ($type === 'interest') {
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-$dompdf->stream($filename, array("Attachment" => false)); // false = open in browser, true = force download
-
+$dompdf->stream($filename, array("Attachment" => false)); // false = open in browser
 
 // --- TEMPLATE FUNCTIONS ---
 
@@ -240,7 +239,6 @@ function buildInterestTemplate($user, $scores) {
 }
 
 function buildAwarenessTemplate($user, $demo, $responses) {
-    // Specifically structured to serve as the raw data appendix for the BAPCH assignment
     $html = getBaseStyles() . '
     <div class="header">
         <h1 class="title">Psychological Awareness Survey</h1>
@@ -270,7 +268,6 @@ function buildAwarenessTemplate($user, $demo, $responses) {
         </tr>';
         
     foreach ($responses as $qId => $answer) {
-        // Handle array responses (like checkboxes)
         $displayAnswer = is_array($answer) ? implode(', ', $answer) : $answer;
         
         $html .= '<tr>
