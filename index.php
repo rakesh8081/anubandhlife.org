@@ -24,6 +24,7 @@
     <div class="dashboard-grid">
         <div class="dashboard-column">
             <h2 class="column-title">Join Us in Self-Discovery</h2>
+            
             <div class="item-group">
                 <h3>1. Interest Inventory Test</h3>
                 <p>Your interests reflect your preference for doing some activities instead of others and can help you choose an appropriate career or additional path.</p>
@@ -33,19 +34,13 @@
 
         <div class="dashboard-column">
             <h2 class="column-title">Survey Collection</h2>
+            
             <div class="item-group">
-                <h3>1. Digital Habits and Well-Being</h3>
-                <p>Explore how your screen time and digital consumption affect your daily routine and mental clarity.</p>
-                <a href="consent.php?test=digital" class="btn">Take Survey</a>
+                <h3>1. Psychological Awareness Survey</h3>
+                <p>A research initiative exploring student perceptions, knowledge gaps, and social attitudes regarding psychological disorders.</p>
+                <a href="consent.php?test=awareness" class="btn">Take Survey</a>
             </div>
         </div>
-		
-		<div class="item-group">
-			<h3>2. Psychological Awareness Survey</h3>
-			<p>A research initiative exploring student perceptions, knowledge gaps, and social attitudes regarding psychological disorders.</p>
-			<a href="consent.php?test=awareness" class="btn">Take Survey</a>
-		</div>
-
     </div>
     </main>
     
