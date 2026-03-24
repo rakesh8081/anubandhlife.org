@@ -1,77 +1,126 @@
 <?php
 // mailer.php
+require 'db_config.php';
+require 'vendor/autoload.php';
 
-// 1. Security: Only accept POST requests containing JSON
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 header('Content-Type: application/json');
-$requestData = json_decode(file_get_contents('php://input'), true);
 
-if (!$requestData) {
-    echo json_encode(['success' => false, 'message' => 'Invalid request format.']);
+$data = json_decode(file_get_contents('php://input'), true);
+$participant_id = $data['participant_id'] ?? null;
+$type = $data['type'] ?? 'interest';
+
+if (!$participant_id) {
+    echo json_encode(['success' => false, 'message' => 'Missing Participant ID.']);
     exit;
 }
 
-$name = htmlspecialchars($requestData['participantName']);
-$email = filter_var($requestData['participantEmail'], FILTER_SANITIZE_EMAIL);
-$reportHtml = $requestData['reportContent'];
+// 1. Fetch Participant Data
+$stmt = $pdo->prepare("SELECT * FROM participants WHERE id = ?");
+$stmt->execute([$participant_id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Validate email
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['success' => false, 'message' => 'Invalid email address provided.']);
+if (!$user || empty($user['email'])) {
+    echo json_encode(['success' => false, 'message' => 'Valid user email not found.']);
     exit;
 }
 
-// 2. Load PHPMailer (You will need to download PHPMailer to your server)
-// Download from: https://github.com/PHPMailer/PHPMailer
-require 'PHPMailer/src/Exception.php';
-require 'PHPMailer/src/PHPMailer.php';
-require 'PHPMailer/src/SMTP.php';
+// 2. Fetch Score Data
+$stmt = $pdo->prepare("SELECT calculated_scores FROM interest_results WHERE participant_id = ? ORDER BY created_at DESC LIMIT 1");
+$stmt->execute([$participant_id]);
+$result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+if (!$result) {
+    echo json_encode(['success' => false, 'message' => 'No test results found to email.']);
+    exit;
+}
 
-$mail = new PHPMailer(true);
+$scores = json_decode($result['calculated_scores'], true);
 
-try {
-    // 3. Server Settings (Your Hostinger SMTP Credentials)
-    $mail->isSMTP();
-    $mail->Host       = 'smtp.hostinger.com'; // Standard Hostinger SMTP server
-    $mail->SMTPAuth   = true;
-    $mail->Username   = 'results@anubandhlife.org'; // Your domain email
-    $mail->Password   = '$o9yjBQ$I84E2UfE'; // Replace with the actual password for this email
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Enable SSL encryption
-    $mail->Port       = 465; // Standard port for Hostinger SSL
+// 3. Generate PDF in Memory (using the same template styling)
+$options = new Options();
+$options->set('isHtml5ParserEnabled', true);
+$options->set('defaultFont', 'Helvetica');
+$dompdf = new Dompdf($options);
 
-    // 4. Recipients
-    $mail->setFrom('results@anubandhlife.org', 'Mind Lab 2.0 | Anubandh Life');
-    $mail->addAddress($email, $name); // Send to the participant
-    
-    // Optional: Blind-copy yourself to keep a record of completed tests
-    $mail->addBCC('rakesh8081@gmail.com'); 
+$html = buildEmailTemplate($user, $scores);
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
 
-    // 5. Content Structure
-    $mail->isHTML(true);
-    $mail->Subject = 'Your Psychological Interest Profile - Mind Lab 2.0';
-    
-    // Wrap their results in a clean email template
-    $mail->Body    = "
-        <div style='font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;'>
-            <h2 style='color: #1a1a1a;'>Hello $name,</h2>
-            <p>Thank you for exploring your dimensions with Mind Lab 2.0. Below is a snapshot of your Interest Profile.</p>
-            <hr style='border: 1px solid #eaeaea;'>
-            $reportHtml
-            <hr style='border: 1px solid #eaeaea;'>
-            <p style='font-size: 0.85rem; color: #666;'>This assessment is for self-exploration and educational purposes. <br>&copy; Anubandh Life.</p>
-        </div>
-    ";
+$pdfOutput = $dompdf->output();
+$filename = 'Interest_Inventory_' . preg_replace('/[^A-Za-z0-9]/', '_', $user['full_name']) . '.pdf';
 
-    // Fallback for non-HTML email clients
-    $mail->AltBody = "Hello $name, thank you for taking the Interest Inventory. Please view this email in an HTML-compatible client to see your full results.";
+// 4. Construct Multipart Email with Attachment
+$to = $user['email'];
+$subject = "Your Mind Lab Interest Profile";
+$senderEmail = "noreply@anubandhlife.org"; // Ensure this matches your Hostinger domain
+$boundary = md5(time());
 
-    // 6. Send the payload
-    $mail->send();
-    echo json_encode(['success' => true, 'message' => 'Email sent successfully.']);
-    
-} catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => "Mailer Error: {$mail->ErrorInfo}"]);
+$headers = "From: Anubandh Life <$senderEmail>\r\n";
+$headers .= "MIME-Version: 1.0\r\n";
+$headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n";
+
+// Email Body
+$message = "--$boundary\r\n";
+$message .= "Content-Type: text/plain; charset=\"UTF-8\"\r\n";
+$message .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+$message .= "Hello " . $user['full_name'] . ",\n\n";
+$message .= "Thank you for completing the Mind Lab assessment. Please find your official Interest Inventory report attached to this email.\n\n";
+$message .= "Best regards,\nAnubandh Life\r\n";
+
+// Attachment
+$message .= "--$boundary\r\n";
+$message .= "Content-Type: application/pdf; name=\"$filename\"\r\n";
+$message .= "Content-Disposition: attachment; filename=\"$filename\"\r\n";
+$message .= "Content-Transfer-Encoding: base64\r\n\r\n";
+$message .= chunk_split(base64_encode($pdfOutput)) . "\r\n";
+$message .= "--$boundary--";
+
+// 5. Send Email
+if (mail($to, $subject, $message, $headers)) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Server failed to send the email.']);
+}
+
+// --- TEMPLATE FUNCTION ---
+function buildEmailTemplate($user, $scores) {
+    $html = '
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; color: #222; font-size: 14px; line-height: 1.4; }
+        .header { text-align: center; border-bottom: 2px solid #2e7d32; padding-bottom: 15px; margin-bottom: 25px; }
+        .title { color: #2e7d32; margin: 0; font-size: 24px; }
+        .meta-table { width: 100%; margin-bottom: 25px; background-color: #f9f9f9; border: 1px solid #eee; }
+        .meta-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .data-table th, .data-table td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        .data-table th { background-color: #e8f5e9; color: #1b5e20; }
+    </style>
+    <div class="header">
+        <h1 class="title">Anubandh Life | Mind Lab</h1>
+        <h2>Interest Inventory Report</h2>
+    </div>
+    <table class="meta-table" cellspacing="0">
+        <tr>
+            <td><strong>Participant:</strong> ' . htmlspecialchars($user['full_name']) . '</td>
+            <td><strong>Age:</strong> ' . htmlspecialchars($user['age']) . '</td>
+        </tr>
+        <tr>
+            <td><strong>Email:</strong> ' . htmlspecialchars($user['email']) . '</td>
+            <td><strong>Date:</strong> ' . date('F j, Y') . '</td>
+        </tr>
+    </table>
+    <table class="data-table">
+        <tr><th width="70%">Category</th><th width="30%">Score</th></tr>';
+        
+    foreach ($scores as $category => $score) {
+        $html .= '<tr><td>' . htmlspecialchars($category) . '</td><td><strong>' . htmlspecialchars($score) . '</strong></td></tr>';
+    }
+        
+    $html .= '</table>';
+    return $html;
 }
 ?>
