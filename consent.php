@@ -69,20 +69,10 @@
 </div>
 
 <script>
-    // Inside your consent.php <script>
     document.getElementById('gatewayForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-		// Inside your form submit event listener in consent.php:
-		const urlParams = new URLSearchParams(window.location.search);
-		const testType = urlParams.get('test');
-
-		if (testType === 'awareness') {
-			window.location.href = 'test-awareness.php';
-		} else {
-			window.location.href = 'test-interest.php'; // Default fallback
-		}
-		
+        // 1. Gather the form data
         const participantData = {
             action: 'register',
             name: document.getElementById('pName').value,
@@ -93,6 +83,7 @@
         };
     
         try {
+            // 2. Send data to the server to get the participant_id
             const response = await fetch('save_data.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -102,12 +93,22 @@
             const result = await response.json();
             
             if (result.success && result.participant_id) {
-                // CRITICAL: We save the ID from the database into our local storage
+                // 3. CRITICAL: Save the ID exactly where test-awareness.php is looking for it
+                localStorage.setItem('participant_id', result.participant_id);
+                
+                // (Optional) Keep the full user object stored as well
                 participantData.db_id = result.participant_id;
                 localStorage.setItem('mindLabUser', JSON.stringify(participantData));
                 
-                // Now we move to the test
-                window.location.href = 'test-interest.php';
+                // 4. NOW route the user to the correct assessment based on the URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const testType = urlParams.get('test');
+
+                if (testType === 'awareness') {
+                    window.location.href = 'test-awareness.php';
+                } else {
+                    window.location.href = 'test-interest.php'; // Default fallback
+                }
             } else {
                 alert("Registration Error: " + (result.message || "Unknown server error"));
             }
