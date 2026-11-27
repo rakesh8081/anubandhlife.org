@@ -208,3 +208,4 @@ body {
 .band-table { width: 100%; border-collapse: collapse; }
 .band-table td { border: 1px solid var(--border-color); padding: 8px 12px; }
 .band-table tr.current td { background: #e8f5e9; font-weight: 600; }
+.item-hint { font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0; clear: both; }

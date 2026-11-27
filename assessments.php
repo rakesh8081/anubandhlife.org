@@ -30,7 +30,30 @@ function mindlab_all_assessments() {
             $all[$id] = $def;
         }
     }
+    uasort($all, fn($a, $b) => ($a['order'] ?? 99) <=> ($b['order'] ?? 99));
     return $all;
+}
+
+// Normalises items: each may be a plain string, or an array with
+//   'text'     => question text
+//   'options'  => [score => label]   (defaults to the test's shared 'options')
+//   'optional' => true               (may be left blank; counts as 0)
+//   'skip_if'  => ['q1', 0]          (skipped, scoring 0, when q1 is answered 0)
+//   'hint'     => short note shown under the question
+function mindlab_items(array $def) {
+    $items = [];
+    foreach ($def['items'] as $key => $item) {
+        if (is_string($item)) {
+            $item = ['text' => $item];
+        }
+        $items[$key] = $item + [
+            'options'  => $def['options'] ?? [],
+            'optional' => false,
+            'skip_if'  => null,
+            'hint'     => '',
+        ];
+    }
+    return $items;
 }
 
 // Scores answers on the server, so the stored score can't be faked by the browser.
@@ -39,12 +62,17 @@ function mindlab_score_assessment(array $def, $responses) {
     if (!is_array($responses)) {
         return null;
     }
-    $allowed = array_keys($def['options']);
     $answers = [];
     $total = 0;
-    foreach ($def['items'] as $key => $text) {
+    foreach (mindlab_items($def) as $key => $item) {
+        if ($item['skip_if'] && ($answers[$item['skip_if'][0]] ?? null) === $item['skip_if'][1]) {
+            continue; // skipped by an earlier answer: scores 0
+        }
         $raw = $responses[$key] ?? null;
-        if (!is_numeric($raw) || !in_array((int)$raw, $allowed, true)) {
+        if (($raw === null || $raw === '') && $item['optional']) {
+            continue; // left blank on purpose: scores 0
+        }
+        if (!is_numeric($raw) || !array_key_exists((int)$raw, $item['options'])) {
             return null;
         }
         $answers[$key] = (int)$raw;

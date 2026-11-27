@@ -1,0 +1,48 @@
+<?php
+// PCL-5 — PTSD Checklist for DSM-5 (Weathers, Litz, Keane, Palmieri, Marx & Schnurr, 2013),
+// National Center for PTSD, U.S. Department of Veterans Affairs. Public domain.
+// A total of 31–33 or more is the commonly used threshold for probable PTSD.
+return [
+    'id'           => 'pcl5',
+    'order'        => 4,
+    'title'        => 'PCL-5 Stress & Trauma Screening',
+    'summary'      => 'A 20-question check of reactions people sometimes have after a very stressful or frightening experience, over the past month.',
+    'minutes'      => 5,
+    'instructions' => 'Think of the most stressful or upsetting experience you have been through. Below is a list of problems people sometimes have in response to a very stressful experience. In the past month, how much were you bothered by:',
+    'options'      => [
+        0 => 'Not at all',
+        1 => 'A little bit',
+        2 => 'Moderately',
+        3 => 'Quite a bit',
+        4 => 'Extremely',
+    ],
+    'items' => [
+        'q1'  => 'Repeated, disturbing, and unwanted memories of the stressful experience?',
+        'q2'  => 'Repeated, disturbing dreams of the stressful experience?',
+        'q3'  => 'Suddenly feeling or acting as if the stressful experience were actually happening again (as if you were actually back there reliving it)?',
+        'q4'  => 'Feeling very upset when something reminded you of the stressful experience?',
+        'q5'  => 'Having strong physical reactions when something reminded you of the stressful experience (for example, heart pounding, trouble breathing, sweating)?',
+        'q6'  => 'Avoiding memories, thoughts, or feelings related to the stressful experience?',
+        'q7'  => 'Avoiding external reminders of the stressful experience (for example, people, places, conversations, activities, objects, or situations)?',
+        'q8'  => 'Trouble remembering important parts of the stressful experience?',
+        'q9'  => 'Having strong negative beliefs about yourself, other people, or the world (for example, having thoughts such as: I am bad, there is something seriously wrong with me, no one can be trusted, the world is completely dangerous)?',
+        'q10' => 'Blaming yourself or someone else for the stressful experience or what happened after it?',
+        'q11' => 'Having strong negative feelings such as fear, horror, anger, guilt, or shame?',
+        'q12' => 'Loss of interest in activities that you used to enjoy?',
+        'q13' => 'Feeling distant or cut off from other people?',
+        'q14' => 'Trouble experiencing positive feelings (for example, being unable to feel happiness or have loving feelings for people close to you)?',
+        'q15' => 'Irritable behavior, angry outbursts, or acting aggressively?',
+        'q16' => 'Taking too many risks or doing things that could cause you harm?',
+        'q17' => 'Being "superalert" or watchful or on guard?',
+        'q18' => 'Feeling jumpy or easily startled?',
+        'q19' => 'Having difficulty concentrating?',
+        'q20' => 'Trouble falling or staying asleep?',
+    ],
+    'crisis_items' => [],
+    'max_score' => 80,
+    'bands' => [
+        [0, 30,  'Below screening threshold', 'Your score is below the level usually used to suggest PTSD. If a stressful experience is still troubling you, talking to someone you trust or a counsellor can help.'],
+        [31, 80, 'Above screening threshold', 'Your score is at or above the level (31–33) usually used to suggest probable PTSD. Please speak with a qualified mental health professional, who can do a full assessment and discuss support and treatment options.'],
+    ],
+    'source' => 'PCL-5 (Weathers, Litz, Keane, Palmieri, Marx & Schnurr, 2013), National Center for PTSD, U.S. Department of Veterans Affairs. Public domain.',
+];
