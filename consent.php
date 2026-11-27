@@ -55,7 +55,7 @@
             <p><strong>1. Purpose:</strong> These assessments are for self-exploration, education and research. Screening questionnaires are not a diagnosis and do not replace advice from a qualified professional.</p>
             <p><strong>2. What we store:</strong> Your name, email, age, sex, phone number and your answers are stored securely on Anubandh Life's servers. They are used only to show and email you your results and, without your name or contact details, for research.</p>
             <p><strong>3. Sensitive information:</strong> Some questionnaires ask about mood, anxiety and thoughts of self-harm. Your answers are not shared with anyone outside Anubandh Life.</p>
-            <p><strong>4. Your choices:</strong> Participation is voluntary and you may stop at any time before submitting. To see or delete your stored data, contact Anubandh Life.</p>
+            <p><strong>4. Your choices:</strong> Participation is voluntary and you may stop at any time before submitting. To see or delete your stored data, email <a href="mailto:contact@anubandhlife.org">contact@anubandhlife.org</a>.</p>
         </div>
 
         <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 30px;">
