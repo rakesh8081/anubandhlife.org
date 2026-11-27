@@ -1,3 +1,8 @@
+<?php
+require 'assessments.php';
+$assessments = mindlab_all_assessments();
+$h = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +33,18 @@
                     <p>Your interests reflect your preference for doing some activities instead of others and can help you choose an appropriate career or additional path.</p>
                     <a href="consent.php?test=interest" class="btn">Take Test</a>
                 </div>
+            </div>
+
+            <div class="dashboard-column">
+                <h2 class="column-title">Wellbeing Screening</h2>
+                <p class="disclaimer-note" style="margin-bottom: 20px;">Short, widely used screening questionnaires. These are not a diagnosis.</p>
+                <?php $n = 0; foreach ($assessments as $a): $n++; ?>
+                <div class="item-group">
+                    <h3><?= $n ?>. <?= $h($a['title']) ?></h3>
+                    <p><?= $h($a['summary']) ?> About <?= (int)$a['minutes'] ?> minutes.</p>
+                    <a href="consent.php?test=<?= $h($a['id']) ?>" class="btn">Start</a>
+                </div>
+                <?php endforeach; ?>
             </div>
 
             <div class="dashboard-column">

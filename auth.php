@@ -25,6 +25,11 @@ function mindlab_remember_participant($id) {
     $_SESSION['mindlab_participants'] = array_values(array_unique($ids));
 }
 
+function mindlab_owned_participants() {
+    mindlab_session_start();
+    return $_SESSION['mindlab_participants'] ?? [];
+}
+
 function mindlab_owns_participant($id) {
     mindlab_session_start();
     return in_array((int)$id, $_SESSION['mindlab_participants'] ?? [], true);
