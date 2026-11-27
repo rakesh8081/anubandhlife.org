@@ -36,35 +36,46 @@ if (!$user || empty($user['email'])) {
     exit;
 }
 
-// 2. Fetch Score Data
-$stmt = $pdo->prepare("SELECT calculated_scores FROM interest_results WHERE participant_id = ? ORDER BY created_at DESC LIMIT 1");
-$stmt->execute([$participant_id]);
-$result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$result) {
-    echo json_encode(['success' => false, 'message' => 'No test results found to email.']);
-    exit;
+// 2. Build the report for the requested test
+$reportName = 'Interest Inventory';
+if ($type === 'assessment') {
+    $def = mindlab_get_assessment($data['test'] ?? '');
+    $row = $def ? mindlab_latest_assessment_result($pdo, $def['id'], [$participant_id]) : null;
+    $scored = $row ? mindlab_score_assessment($def, $row['responses']) : null;
+    if (!$scored) {
+        echo json_encode(['success' => false, 'message' => 'No test results found to email.']);
+        exit;
+    }
+    $html = buildAssessmentTemplate($user, $def, $row, $scored);
+    $reportName = $def['title'];
+    $filePrefix = strtoupper($def['id']);
+} else {
+    $stmt = $pdo->prepare("SELECT calculated_scores FROM interest_results WHERE participant_id = ? ORDER BY created_at DESC LIMIT 1");
+    $stmt->execute([$participant_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$result) {
+        echo json_encode(['success' => false, 'message' => 'No test results found to email.']);
+        exit;
+    }
+    $html = buildInterestTemplate($user, json_decode($result['calculated_scores'], true));
+    $filePrefix = 'Interest_Inventory';
 }
 
-$scores = json_decode($result['calculated_scores'], true);
-
-// 3. Generate PDF in Memory (using the same template styling)
+// 3. Generate PDF in memory
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('defaultFont', 'Helvetica');
 $dompdf = new Dompdf($options);
-
-$html = buildInterestTemplate($user, $scores);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 $pdfOutput = $dompdf->output();
-$filename = 'Interest_Inventory_' . preg_replace('/[^A-Za-z0-9]/', '_', $user['full_name']) . '.pdf';
+$filename = $filePrefix . '_' . preg_replace('/[^A-Za-z0-9]/', '_', $user['full_name']) . '.pdf';
 
 // 4. Construct Multipart Email with Attachment
 $to = $user['email'];
-$subject = "Your Mind Lab Interest Profile";
+$subject = "Your Mind Lab " . $reportName . " Report";
 $senderEmail = "noreply@anubandhlife.org"; // Ensure this matches your Hostinger domain
 $boundary = md5(time());
 
@@ -77,7 +88,7 @@ $message = "--$boundary\r\n";
 $message .= "Content-Type: text/plain; charset=\"UTF-8\"\r\n";
 $message .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
 $message .= "Hello " . str_replace(["\r", "\n"], ' ', $user['full_name']) . ",\n\n";
-$message .= "Thank you for completing the Mind Lab assessment. Please find your official Interest Inventory report attached to this email.\n\n";
+$message .= "Thank you for completing the Mind Lab assessment. Please find your " . $reportName . " report attached to this email.\n\n";
 $message .= "Best regards,\nAnubandh Life\r\n";
 
 // Attachment

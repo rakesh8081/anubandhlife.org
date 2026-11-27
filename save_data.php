@@ -2,6 +2,7 @@
 // save_data.php
 require 'db_config.php';
 require 'auth.php';
+require 'assessments.php';
 header('Content-Type: application/json');
 
 function respond($payload, $status = 200) {
@@ -50,7 +51,7 @@ if ($action === 'register') {
 }
 
 // Results can only be attached to a participant registered in this browser session
-if (in_array($action, ['save_results', 'save_awareness_results'], true)
+if (in_array($action, ['save_results', 'save_awareness_results', 'save_assessment'], true)
     && !mindlab_owns_participant($data['participant_id'] ?? 0)) {
     respond(['success' => false, 'message' => 'Your session has expired. Please start again from the home page.'], 403);
 }
@@ -83,6 +84,34 @@ elseif ($action === 'save_awareness_results') {
     } catch (\Throwable $e) {
         error_log("Survey Save Error: " . $e->getMessage());
         respond(['success' => false, 'message' => 'Could not save your responses. Please try again.'], 500);
+    }
+}
+
+elseif ($action === 'save_assessment') {
+    // 4. Save a screening test (PHQ-9, GAD-7, ...). Scored on the server.
+    $def = mindlab_get_assessment($data['test_id'] ?? '');
+    if (!$def) {
+        respond(['success' => false, 'message' => 'Unknown assessment.'], 400);
+    }
+    $scored = mindlab_score_assessment($def, $data['responses'] ?? null);
+    if (!$scored) {
+        respond(['success' => false, 'message' => 'Please answer every statement before continuing.'], 400);
+    }
+    try {
+        mindlab_ensure_assessment_table($pdo);
+        $stmt = $pdo->prepare("INSERT INTO assessment_results (participant_id, test_id, responses, total_score, severity, crisis_flag) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            (int)$data['participant_id'],
+            $def['id'],
+            json_encode($scored['answers'] + $scored['extra']),
+            $scored['total'],
+            $scored['severity'],
+            $scored['crisis'] ? 1 : 0,
+        ]);
+        respond(['success' => true]);
+    } catch (\Throwable $e) {
+        error_log("Assessment Save Error: " . $e->getMessage());
+        respond(['success' => false, 'message' => 'Could not save your answers. Please try again.'], 500);
     }
 }
 

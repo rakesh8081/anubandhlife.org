@@ -52,9 +52,10 @@
 
         <div class="consent-scroll">
             <h4 style="margin-bottom: 10px;">Informed Consent Statement</h4>
-            <p><strong>1. Purpose:</strong> This assessment is designed for self-exploration and educational purposes.</p>
-            <p><strong>2. Data Privacy:</strong> Responses are processed locally. If emailed, data is transmitted securely via our servers.</p>
-            <p><strong>3. Voluntary Participation:</strong> You may exit at any time without submitting data.</p>
+            <p><strong>1. Purpose:</strong> These assessments are for self-exploration, education and research. Screening questionnaires are not a diagnosis and do not replace advice from a qualified professional.</p>
+            <p><strong>2. What we store:</strong> Your name, email, age, sex, phone number and your answers are stored securely on Anubandh Life's servers. They are used only to show and email you your results and, without your name or contact details, for research.</p>
+            <p><strong>3. Sensitive information:</strong> Some questionnaires ask about mood, anxiety and thoughts of self-harm. Your answers are not shared with anyone outside Anubandh Life.</p>
+            <p><strong>4. Your choices:</strong> Participation is voluntary and you may stop at any time before submitting. To see or delete your stored data, contact Anubandh Life.</p>
         </div>
 
         <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 30px;">
@@ -106,6 +107,8 @@
 
                 if (testType === 'awareness') {
                     window.location.href = 'test-awareness.php';
+                } else if (testType && /^[a-z0-9_-]+$/.test(testType) && testType !== 'interest') {
+                    window.location.href = 'test.php?id=' + encodeURIComponent(testType);
                 } else {
                     window.location.href = 'test-interest.php'; // Default fallback
                 }

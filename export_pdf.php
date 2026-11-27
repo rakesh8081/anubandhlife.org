@@ -68,6 +68,18 @@ if ($type === 'interest') {
     } else {
          die("Error: No awareness data found.");
     }
+} elseif ($type === 'assessment') {
+    $def = mindlab_get_assessment($_GET['test'] ?? '');
+    if (!$def) {
+        die("Error: Unknown assessment.");
+    }
+    $row = mindlab_latest_assessment_result($pdo, $def['id'], [$participant_id]);
+    $scored = $row ? mindlab_score_assessment($def, $row['responses']) : null;
+    if (!$scored) {
+        die("Error: No results found for this assessment.");
+    }
+    $html = buildAssessmentTemplate($user, $def, $row, $scored);
+    $filename = strtoupper($def['id']) . '_' . preg_replace('/[^A-Za-z0-9]/', '_', $user['full_name']) . '.pdf';
 } else {
     die("Error: Invalid report type.");
 }

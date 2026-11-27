@@ -1,5 +1,6 @@
 <?php
 // report_templates.php — shared PDF templates used by export_pdf.php and mailer.php
+require_once __DIR__ . '/assessments.php';
 
 
 function getBaseStyles() {
@@ -211,4 +212,63 @@ function buildAwarenessTemplate($user, $demo, $responses) {
     
     return $html;
 }
-?>
+
+function buildAssessmentTemplate($user, $def, $row, $scored) {
+    $h = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    $html = getBaseStyles() . '
+    <style>
+        .score { font-size: 28px; font-weight: bold; color: #2e7d32; }
+        .crisis { border: 2px solid #c62828; background: #fdecea; padding: 12px; margin-bottom: 20px; font-size: 13px; }
+        .crisis ul { margin: 8px 0; padding-left: 18px; }
+        .disclaimer { font-size: 12px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 25px; }
+    </style>
+    <div class="header">
+        <h1 class="title">Anubandh Life | Mind Lab</h1>
+        <h2 class="subtitle">' . $h($def['title']) . ' Report</h2>
+    </div>
+
+    <table class="meta-table" cellspacing="0">
+        <tr>
+            <td><strong>Participant:</strong> ' . $h($user['full_name']) . '</td>
+            <td><strong>Age / Sex:</strong> ' . $h($user['age']) . ' / ' . $h($user['sex']) . '</td>
+        </tr>
+        <tr>
+            <td><strong>Email:</strong> ' . $h($user['email']) . '</td>
+            <td><strong>Date taken:</strong> ' . $h(date('F j, Y', strtotime($row['created_at']))) . '</td>
+        </tr>
+    </table>';
+
+    if ($scored['crisis']) {
+        $html .= '<div class="crisis">' . mindlab_crisis_html() . '</div>';
+    }
+
+    $html .= '
+    <p><span class="score">' . (int)$scored['total'] . ' / ' . (int)$def['max_score'] . '</span>
+       &nbsp; <strong>' . $h($scored['severity']) . '</strong></p>
+    <p style="font-size: 13px;">' . $h($scored['summary']) . '</p>
+
+    <h3 class="section-title">Your Answers</h3>
+    <p style="font-size: 12px; color: #555;">' . $h($def['instructions']) . '</p>
+    <table class="data-table">
+        <tr><th width="70%">Statement</th><th width="30%">Answer</th></tr>';
+    foreach ($def['items'] as $key => $text) {
+        $html .= '<tr><td>' . $h($text) . '</td><td>' . $h($def['options'][$scored['answers'][$key]] ?? '') . '</td></tr>';
+    }
+    foreach ($def['extra'] ?? [] as $key => $q) {
+        if (isset($scored['extra'][$key])) {
+            $html .= '<tr><td><em>' . $h($q['text']) . '</em></td><td>' . $h($q['options'][$scored['extra'][$key]]) . '</td></tr>';
+        }
+    }
+    $html .= '</table>
+
+    <h3 class="section-title">Score Ranges</h3>
+    <table class="data-table">';
+    foreach ($def['bands'] as [$min, $max, $label]) {
+        $html .= '<tr><td width="30%">' . (int)$min . '–' . (int)$max . '</td><td>' . $h($label) . '</td></tr>';
+    }
+    $html .= '</table>
+
+    <div class="disclaimer">' . $h(mindlab_disclaimer_text()) . '<br><br>' . $h($def['source']) . '</div>';
+
+    return $html;
+}
