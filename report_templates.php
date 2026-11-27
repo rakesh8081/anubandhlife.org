@@ -251,8 +251,11 @@ function buildAssessmentTemplate($user, $def, $row, $scored) {
     <p style="font-size: 12px; color: #555;">' . $h($def['instructions']) . '</p>
     <table class="data-table">
         <tr><th width="70%">Statement</th><th width="30%">Answer</th></tr>';
-    foreach ($def['items'] as $key => $text) {
-        $html .= '<tr><td>' . $h($text) . '</td><td>' . $h($def['options'][$scored['answers'][$key]] ?? '') . '</td></tr>';
+    foreach (mindlab_items($def) as $key => $item) {
+        $answer = array_key_exists($key, $scored['answers'])
+            ? ($item['options'][$scored['answers'][$key]] ?? '')
+            : 'Not answered / not applicable';
+        $html .= '<tr><td>' . $h($item['text']) . '</td><td>' . $h($answer) . '</td></tr>';
     }
     foreach ($def['extra'] ?? [] as $key => $q) {
         if (isset($scored['extra'][$key])) {

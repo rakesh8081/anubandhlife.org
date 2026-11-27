@@ -8,7 +8,6 @@ if (!$def) {
     exit;
 }
 $h = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
-$itemCount = count($def['items']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,20 +34,24 @@ $itemCount = count($def['items']);
         <p style="margin: 20px 0 30px; font-weight: 600;"><?= $h($def['instructions']) ?></p>
 
         <form id="screeningForm">
-            <?php $n = 0; foreach ($def['items'] as $key => $text): $n++; ?>
-            <fieldset class="screen-item">
-                <legend><?= $n ?>. <?= $h($text) ?></legend>
+            <?php $n = 0; foreach (mindlab_items($def) as $key => $item): $n++;
+                $isCrisis = in_array($key, $def['crisis_items'] ?? [], true); ?>
+            <fieldset class="screen-item" data-key="<?= $h($key) ?>"
+                <?php if ($item['skip_if']): ?>data-skip-key="<?= $h($item['skip_if'][0]) ?>" data-skip-value="<?= (int)$item['skip_if'][1] ?>"<?php endif; ?>
+                <?= $item['optional'] ? 'data-optional="1"' : '' ?>>
+                <legend><?= $n ?>. <?= $h($item['text']) ?></legend>
+                <?php if ($item['hint'] !== ''): ?><p class="item-hint"><?= $h($item['hint']) ?></p><?php endif; ?>
                 <div class="option-list">
-                    <?php foreach ($def['options'] as $value => $label): ?>
+                    <?php foreach ($item['options'] as $value => $label): ?>
                     <label>
-                        <input type="radio" name="<?= $h($key) ?>" value="<?= (int)$value ?>" required
-                            <?= in_array($key, $def['crisis_items'] ?? [], true) ? 'data-crisis="1"' : '' ?>>
+                        <input type="radio" name="<?= $h($key) ?>" value="<?= (int)$value ?>"
+                            <?= $isCrisis ? 'data-crisis="1"' : '' ?>>
                         <?= $h($label) ?>
                     </label>
                     <?php endforeach; ?>
                 </div>
             </fieldset>
-            <?php if (in_array($key, $def['crisis_items'] ?? [], true)): ?>
+            <?php if ($isCrisis): ?>
             <div id="crisis-<?= $h($key) ?>" class="crisis-inline" hidden><?= mindlab_crisis_html() ?></div>
             <?php endif; ?>
             <?php endforeach; ?>
@@ -79,7 +82,7 @@ $itemCount = count($def['items']);
 
 <script>
     const TEST_ID = <?= json_encode($def['id']) ?>;
-    const ITEM_KEYS = <?= json_encode(array_keys($def['items'])) ?>;
+    const ITEM_KEYS = <?= json_encode(array_keys(mindlab_items($def))) ?>;
     const EXTRA_KEYS = <?= json_encode(array_keys($def['extra'] ?? [])) ?>;
 
     // Must have registered through the consent page first
@@ -91,6 +94,21 @@ $itemCount = count($def['items']);
     } else {
         document.getElementById('displayUserCard').textContent = userData.name;
     }
+
+    // Hide questions that an earlier answer makes irrelevant (e.g. AUDIT for non-drinkers)
+    function isSkipped(fs) {
+        if (!fs.dataset.skipKey) return false;
+        const chosen = document.querySelector('input[name="' + fs.dataset.skipKey + '"]:checked');
+        return chosen !== null && Number(chosen.value) === Number(fs.dataset.skipValue);
+    }
+    function applySkips() {
+        document.querySelectorAll('fieldset[data-skip-key]').forEach(fs => {
+            const skip = isSkipped(fs);
+            fs.hidden = skip;
+            if (skip) fs.querySelectorAll('input').forEach(i => { i.checked = false; });
+        });
+    }
+    document.querySelectorAll('#screeningForm input[type="radio"]').forEach(i => i.addEventListener('change', applySkips));
 
     // Show support information as soon as a crisis item is answered above 0
     document.querySelectorAll('input[data-crisis]').forEach(input => {
@@ -108,8 +126,13 @@ $itemCount = count($def['items']);
         for (const key of ITEM_KEYS.concat(EXTRA_KEYS)) {
             if (form.get(key) !== null) responses[key] = Number(form.get(key));
         }
-        if (ITEM_KEYS.some(k => !(k in responses))) {
-            errorMsg.textContent = 'Please answer all ' + ITEM_KEYS.length + ' statements before continuing.';
+        const missing = ITEM_KEYS.filter(k => {
+            const fs = document.querySelector('fieldset[data-key="' + k + '"]');
+            return !(k in responses) && !fs.dataset.optional && !isSkipped(fs);
+        });
+        if (missing.length) {
+            document.querySelector('fieldset[data-key="' + missing[0] + '"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            errorMsg.textContent = 'Please answer every question before continuing (' + missing.length + ' left).';
             errorMsg.style.display = 'block';
             return;
         }

@@ -6,6 +6,7 @@
 // translate, display or distribute.
 return [
     'id'           => 'phq9',
+    'order'        => 1,
     'title'        => 'PHQ-9 Depression Screening',
     'summary'      => 'A 9-question check of how often low mood and related problems have bothered you over the last two weeks.',
     'minutes'      => 3,

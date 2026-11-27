@@ -6,6 +6,7 @@
 // translate, display or distribute.
 return [
     'id'           => 'gad7',
+    'order'        => 2,
     'title'        => 'GAD-7 Anxiety Screening',
     'summary'      => 'A 7-question check of how often worry and anxiety have bothered you over the last two weeks.',
     'minutes'      => 2,
