@@ -129,8 +129,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const dateObj = new Date();
     const dateString = dateObj.toLocaleDateString();
     
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     document.getElementById('reportMeta').innerHTML = `
-        <strong>Participant:</strong> ${user.name} &nbsp;|&nbsp; <strong>Age:</strong> ${user.age} &nbsp;|&nbsp; <strong>Sex:</strong> ${user.sex} <br>
+        <strong>Participant:</strong> ${esc(user.name)} &nbsp;|&nbsp; <strong>Age:</strong> ${esc(user.age)} &nbsp;|&nbsp; <strong>Sex:</strong> ${esc(user.sex)} <br>
         <span style="display:inline-block; margin-top:5px;"><strong>Assessment Date:</strong> ${dateString}</span>
     `;
 
