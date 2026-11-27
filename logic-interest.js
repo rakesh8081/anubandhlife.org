@@ -5,7 +5,7 @@ const interestQuestions = [
     { q: "producing designs from my own ideas", cat: "C" },
     { q: "being physically active", cat: "P" },
     { q: "managing a team of people", cat: "E" },
-    { q: "working our problems", cat: "I" },
+    { q: "working out problems", cat: "I" },
     { q: "working with people", cat: "S" },
     { q: "getting the details right", cat: "O" },
     { q: "to be different", cat: "C" },
@@ -114,7 +114,7 @@ async function calculateAndSaveScores() {
             return true;
         } else {
             console.error("DB Error:", dbResult.message);
-            alert("Database Error: Could not save your results.");
+            alert(dbResult.message || "Could not save your results. Please try again.");
             return false;
         }
     } catch (err) {

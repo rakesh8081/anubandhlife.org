@@ -1,40 +1,73 @@
 <?php
 // save_data.php
 require 'db_config.php';
+require 'auth.php';
 header('Content-Type: application/json');
 
+function respond($payload, $status = 200) {
+    http_response_code($status);
+    echo json_encode($payload);
+    exit;
+}
+
 $data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) {
+    respond(['success' => false, 'message' => 'Invalid request.'], 400);
+}
 $action = $data['action'] ?? '';
 
 if ($action === 'register') {
-    // 1. Save Participant
+    // 1. Validate and save participant
+    $name  = trim((string)($data['name'] ?? ''));
+    $email = trim((string)($data['email'] ?? ''));
+    $age   = filter_var($data['age'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 120]]);
+    $sex   = trim((string)($data['sex'] ?? ''));
+    $phone = trim((string)($data['phone'] ?? ''));
+
+    if ($name === '' || mb_strlen($name) > 100) {
+        respond(['success' => false, 'message' => 'Please enter your name.'], 400);
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        respond(['success' => false, 'message' => 'Please enter a valid email address.'], 400);
+    }
+    if ($age === false) {
+        respond(['success' => false, 'message' => 'Please enter a valid age.'], 400);
+    }
+    if ($sex === '' || mb_strlen($sex) > 20 || mb_strlen($phone) > 20) {
+        respond(['success' => false, 'message' => 'Please check your details and try again.'], 400);
+    }
+
     try {
         $stmt = $pdo->prepare("INSERT INTO participants (full_name, email, age, sex, phone) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $data['name'],
-            $data['email'],
-            $data['age'],
-            $data['sex'],
-            $data['phone']
-        ]);
+        $stmt->execute([$name, $email, $age, $sex, $phone]);
         $lastId = $pdo->lastInsertId();
-        echo json_encode(['success' => true, 'participant_id' => $lastId]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        mindlab_remember_participant($lastId);
+        respond(['success' => true, 'participant_id' => $lastId]);
+    } catch (\Throwable $e) {
+        error_log("Register Error: " . $e->getMessage());
+        respond(['success' => false, 'message' => 'Could not save your details. Please try again.'], 500);
     }
-} 
-elseif ($action === 'save_results') {
+}
+
+// Results can only be attached to a participant registered in this browser session
+if (in_array($action, ['save_results', 'save_awareness_results'], true)
+    && !mindlab_owns_participant($data['participant_id'] ?? 0)) {
+    respond(['success' => false, 'message' => 'Your session has expired. Please start again from the home page.'], 403);
+}
+
+if ($action === 'save_results') {
     // 2. Save Test Scores
     try {
         $stmt = $pdo->prepare("INSERT INTO interest_results (participant_id, raw_responses, calculated_scores) VALUES (?, ?, ?)");
         $stmt->execute([
-            $data['participant_id'],
-            json_encode($data['responses']),
-            json_encode($data['scores'])
+            (int)$data['participant_id'],
+            json_encode($data['responses'] ?? []),
+            json_encode($data['scores'] ?? [])
         ]);
-        echo json_encode(['success' => true]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        respond(['success' => true]);
+    } catch (\Throwable $e) {
+        error_log("Results Save Error: " . $e->getMessage());
+        respond(['success' => false, 'message' => 'Could not save your results. Please try again.'], 500);
     }
 }
 elseif ($action === 'save_awareness_results') {
@@ -42,17 +75,15 @@ elseif ($action === 'save_awareness_results') {
     try {
         $stmt = $pdo->prepare("INSERT INTO awareness_survey_results (participant_id, demographics, responses) VALUES (?, ?, ?)");
         $stmt->execute([
-            $data['participant_id'],
-            json_encode($data['demographics']),
-            json_encode($data['responses'])
+            (int)$data['participant_id'],
+            json_encode($data['demographics'] ?? []),
+            json_encode($data['responses'] ?? [])
         ]);
-        echo json_encode(['success' => true]);
-    } catch (\Throwable $e) { 
-        // \Throwable catches EVERYTHING, preventing a 500 error crash
+        respond(['success' => true]);
+    } catch (\Throwable $e) {
         error_log("Survey Save Error: " . $e->getMessage());
-        
-        // This sends the exact database error back to your browser console
-        echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
+        respond(['success' => false, 'message' => 'Could not save your responses. Please try again.'], 500);
     }
 }
-?>
+
+respond(['success' => false, 'message' => 'Unknown action.'], 400);

@@ -113,7 +113,9 @@
         } else {
             submitBtn.innerText = "Calculate My Profile";
             submitBtn.disabled = false;
-            document.getElementById('errorMsg').style.display = 'block';
+            // Only show the "answer all" hint when questions are actually unanswered
+            const answered = document.querySelectorAll('#questions-target input[type="radio"]:checked').length;
+            document.getElementById('errorMsg').style.display = answered < 36 ? 'block' : 'none';
         }
     });
 

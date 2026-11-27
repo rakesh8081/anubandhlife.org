@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .catch(err => {
             console.error(err);
-            document.getElementById('errorMessage').innerText = "Network Error: Could not save data. Please check your connection.";
+            document.getElementById('errorMessage').innerText = err.message || "Could not save data. Please check your connection.";
             document.getElementById('errorMessage').style.display = "block";
             submitBtn.innerText = "Submit Survey Data";
             submitBtn.style.background = "#2e7d32";
